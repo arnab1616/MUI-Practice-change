@@ -1,19 +1,28 @@
 import * as React from 'react';
 import { styled } from '@mui/material/styles';
 import Card from '@mui/material/Card';
-import CardHeader from '@mui/material/CardHeader';
 import CardMedia from '@mui/material/CardMedia';
 import CardContent from '@mui/material/CardContent';
 import CardActions from '@mui/material/CardActions';
 import Collapse from '@mui/material/Collapse';
-import Avatar from '@mui/material/Avatar';
+import Box from '@mui/material/Box';
 import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
-import { red } from '@mui/material/colors';
-import FavoriteIcon from '@mui/icons-material/Favorite';
-import ShareIcon from '@mui/icons-material/Share';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import MoreVertIcon from '@mui/icons-material/MoreVert';
+import DeleteIcon from '@mui/icons-material/Delete';
+import EditIcon from '@mui/icons-material/Edit';
+import StarRateRoundedIcon from '@mui/icons-material/StarRateRounded';
+import Dialog from '@mui/material/Dialog';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContent from '@mui/material/DialogContent';
+import DialogContentText from '@mui/material/DialogContentText';
+import DialogTitle from '@mui/material/DialogTitle';
+import Button from '@mui/material/Button';
+import TextField from '@mui/material/TextField';
+import { updateProductByForm,deleteProductById, deleteProduct } from '../redux/productSlice';
+import {useDispatch,useSelector} from 'react-redux';
+import axios from 'axios';
+
 
 const ExpandMore = styled((props) => {
   const { expand, ...other } = props;
@@ -39,48 +48,62 @@ const ExpandMore = styled((props) => {
   ],
 }));
 
-export default function RecipeReviewCard() {
+export default function RecipeReviewCard(elements) {
   const [expanded, setExpanded] = React.useState(false);
-
   const handleExpandClick = () => {
     setExpanded(!expanded);
   };
+  const [open, setOpen] = React.useState(false);
+  const [openEdit, setOpenEdit] = React.useState(false);
+  const dispatch = useDispatch();
+
+  const handleClickOpenEdit = () => {
+    setOpenEdit(true);
+  };
+  const handleClickOpen = () => {
+    setOpen(true);
+  };
+
+  const handleClose = () => {
+    setOpen(false);
+    setOpenEdit(false)
+  };
+
+  const editProduct = async (event) => {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    const formJson = Object.fromEntries(formData.entries());
+    // dispatch(updateProductByForm({id:elements.props.id,formJson}))
+    dispatch(deleteProduct({id:elements.props.id,formJson}))
+    handleClose();
+  }
 
   return (
-    <Card sx={{ maxWidth: 345 }}>
-      <CardHeader
-        avatar={
-          <Avatar sx={{ bgcolor: red[500] }} aria-label="recipe">
-            R
-          </Avatar>
-        }
-        action={
-          <IconButton aria-label="settings">
-            <MoreVertIcon />
-          </IconButton>
-        }
-        title="Shrimp and Chorizo Paella"
-        subheader="September 14, 2016"
-      />
+    <>
+    <Card sx={{ maxWidth: 345 }} key={elements.props.id}>
+      {/* <CardHeader title="Essence Mascara Lash Princess" subheader="September 14, 2016" /> */}
       <CardMedia
         component="img"
         height="194"
-        image="https://picsum.photos/200/300"
+        image={`${elements.props.thumbnail}`}
         alt="Paella dish"
+        loading='lazy'
       />
       <CardContent>
+        <Typography variant='h6' >
+          {elements.props.title}
+        </Typography>
+        <Typography variant="body1" sx={{ color: 'text.primary', display:'flex', alignItems:'center' }}>$ {elements.props.price}  - {elements.props.rating} <StarRateRoundedIcon sx={{mb:0.5 , color:"#ff9b00"}} />  </Typography>
         <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-          This impressive paella is a perfect party dish and a fun meal to cook
-          together with your guests. Add 1 cup of frozen peas along with the mussels,
-          if you like.
+          {elements.props.description}
         </Typography>
       </CardContent>
       <CardActions disableSpacing>
-        <IconButton aria-label="add to favorites">
-          <FavoriteIcon />
+        <IconButton aria-label="add to favorites" onClick={handleClickOpen}>
+          <DeleteIcon />
         </IconButton>
-        <IconButton aria-label="share">
-          <ShareIcon />
+        <IconButton aria-label="share" onClick={handleClickOpenEdit}>
+          <EditIcon />
         </IconButton>
         <ExpandMore
           expand={expanded}
@@ -93,33 +116,61 @@ export default function RecipeReviewCard() {
       </CardActions>
       <Collapse in={expanded} timeout="auto" unmountOnExit>
         <CardContent>
-          <Typography sx={{ marginBottom: 2 }}>Method:</Typography>
-          <Typography sx={{ marginBottom: 2 }}>
-            Heat 1/2 cup of the broth in a pot until simmering, add saffron and set
-            aside for 10 minutes.
-          </Typography>
-          <Typography sx={{ marginBottom: 2 }}>
-            Heat oil in a (14- to 16-inch) paella pan or a large, deep skillet over
-            medium-high heat. Add chicken, shrimp and chorizo, and cook, stirring
-            occasionally until lightly browned, 6 to 8 minutes. Transfer shrimp to a
-            large plate and set aside, leaving chicken and chorizo in the pan. Add
-            pimentón, bay leaves, garlic, tomatoes, onion, salt and pepper, and cook,
-            stirring often until thickened and fragrant, about 10 minutes. Add
-            saffron broth and remaining 4 1/2 cups chicken broth; bring to a boil.
-          </Typography>
-          <Typography sx={{ marginBottom: 2 }}>
-            Add rice and stir very gently to distribute. Top with artichokes and
-            peppers, and cook without stirring, until most of the liquid is absorbed,
-            15 to 18 minutes. Reduce heat to medium-low, add reserved shrimp and
-            mussels, tucking them down into the rice, and cook again without
-            stirring, until mussels have opened and rice is just tender, 5 to 7
-            minutes more. (Discard any mussels that don&apos;t open.)
-          </Typography>
-          <Typography>
-            Set aside off of the heat to let rest for 10 minutes, and then serve.
-          </Typography>
+          <Typography sx={{ marginBottom: 2 }}>More about Product:</Typography>
+          <Box sx={{ display:{xs:'block', md:'flex'} }}>
+            <Box>
+              <img src={elements.props.meta.qrCode} alt="" width={'100%'} />
+            </Box>
+            <Box sx={{mt:1}}>
+              <Typography variant='body2' sx={{ marginBottom: 2 }}>Created at: {elements.props.meta.createdAt}</Typography>
+              <Typography variant='body2' sx={{ marginBottom: 2 }}>Updated at: {elements.props.meta.updatedAt}</Typography>
+            </Box>
+          </Box>
         </CardContent>
       </Collapse>
     </Card>
+    <Dialog open={open} onClose={handleClose} aria-labelledby="alert-dialog-title" aria-describedby="alert-dialog-description">
+        <DialogTitle id="alert-dialog-title">
+          {"Delete Product?"}
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText id="alert-dialog-description">
+            Are you sure to delete product permanantly?.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleClose}>Cancle</Button>
+          <Button onClick={()=>{ setOpen(false); dispatch(deleteProduct(elements.props))}} autoFocus>
+            Delete
+            {/* dispatch(deleteProductById(elements.props)); */}
+          </Button>
+        </DialogActions>
+      </Dialog>
+      <Dialog
+        open={openEdit}
+        onClose={handleClose}
+        PaperProps={{
+          component: 'form',
+          onSubmit: editProduct,
+        }}
+      >
+        <DialogTitle>Edit Product {openEdit?elements.props.id:null}</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Please fill all the fields carefully.
+          </DialogContentText>
+          <TextField autoFocus  required margin="dense" id="name" name="title" label="Product Title" type="text" fullWidth   />
+          <TextField autoFocus required margin="dense" id="name" name="description" label="Description" type="text" fullWidth   />
+          <Box sx={{display:'flex'}}>
+            <TextField autoFocus required margin="dense" id="name" name="price" label="Price" type="number" fullWidth   sx={{mr:2}} />
+            <TextField autoFocus required margin="dense" id="name" name="discountPercentage" label="Discount Percentage" type="number" fullWidth  />
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleClose}>Cancel</Button>
+          <Button type="submit">Edit</Button>
+        </DialogActions>
+      </Dialog>
+    </>
   );
 }
